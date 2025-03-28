@@ -1,0 +1,71 @@
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  buildConfiguration: 'Release'
+  pulumiStack: 'dev'
+  pulumiProject: 'DockerSwarm'
+  azureSubscription: 'AzurePulumiConnection'  # <-- Nome da sua service connection ARM
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+
+- task: UseDotNet@2
+  displayName: 'Install .NET SDK'
+  inputs:
+    packageType: sdk
+    version: '6.0.x'
+
+- task: PulumiInstaller@1
+  displayName: 'Install Pulumi CLI'
+  inputs:
+    pulumiVersion: 'latest'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Restore NuGet packages'
+  inputs:
+    command: 'restore'
+    projects: '**/*.csproj'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Build project'
+  inputs:
+    command: 'build'
+    projects: '**/*.csproj'
+    arguments: '--configuration $(buildConfiguration)'
+
+- task: PulumiLogin@1
+  displayName: 'Pulumi Login to Filesystem'
+  inputs:
+    loginType: 'cli'
+
+- task: AzureCLI@2
+  displayName: 'Azure CLI Login (for Pulumi)'
+  inputs:
+    azureSubscription: '$(azureSubscription)'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az account show
+
+- task: Pulumi@1
+  displayName: 'Pulumi Preview'
+  inputs:
+    command: 'preview'
+    stack: '$(pulumiStack)'
+    cwd: '.'
+    azureSubscription: '$(azureSubscription)'
+    args: '-y'
+
+- task: Pulumi@1
+  displayName: 'Pulumi Up (Deploy Docker Swarm)'
+  inputs:
+    command: 'up'
+    stack: '$(pulumiStack)'
+    cwd: '.'
+    azureSubscription: '$(azureSubscription)'
+    args: '-y'
