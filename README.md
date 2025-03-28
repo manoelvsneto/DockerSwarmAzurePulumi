@@ -19,7 +19,7 @@ This repository contains a Pulumi program written in C# that provisions a **Dock
 - Git
 ```text
                            ┌─────────────────────────────┐
-                           │     Azure Resource Group     │
+                           │     Azure Resource Group    │
                            └────────────┬────────────────┘
                                         │
              ┌──────────────────────────┴──────────────────────────┐
